@@ -96,18 +96,6 @@ def check_conditions(btc, eth):
 
 
     # ==========================================
-    # محاسبات فعلی
-    # ==========================================
-    
-    current_ratio = btc / eth
-    current_result = {
-        "btc": btc,
-        "eth": eth,
-        "ratio": current_ratio,
-    }
-
-
-    # ==========================================
     # استفاده از نتیجه قبلی
     # ==========================================
 
@@ -117,9 +105,20 @@ def check_conditions(btc, eth):
         previous_eth = previous_result.get("eth")
         previous_ratio = previous_result.get("ratio")
 
-        print(f"Previous BTC: {previous_btc}")
-        print(f"Previous ETH: {previous_eth}")
-        print(f"Previous Ratio: {previous_ratio}")
+        print(f"Previous Data: {previous_result}")
+
+    # ==========================================
+    # محاسبات فعلی
+    # ==========================================
+    
+    current_ratio = btc / eth
+    current_result = {
+        "btc": btc,
+        "eth": eth,
+        "ratio": current_ratio,
+    }
+    print(f"Current Data: {current_result}")
+
 
         # ======================================
         # شروط خودت را اینجا بنویس
@@ -182,9 +181,6 @@ def check_conditions(btc, eth):
 def main():
 
     btc, eth = get_prices()
-
-    print(f"BTC/USDT = {btc:,.2f}")
-    print(f"ETH/USDT = {eth:,.2f}")
 
     message = check_conditions(btc, eth)
 
