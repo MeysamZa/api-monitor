@@ -166,7 +166,7 @@ def check_conditions(btc, eth):
             f"BTC/USDT: {btc:,.2f}\n"
             f"ETH/USDT: {eth:,.2f}\n"
             f"Ratio: {current_ratio:,.2f}\n"
-            f"Signal: {signal:,.2f}\n"
+            f"Signal: {signal}\n"
         )
 
     return None
