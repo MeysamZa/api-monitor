@@ -6,7 +6,7 @@ import requests
 # Configuration
 # ==========================================
 
-HIGH_BTC_ETH_RATIO = 31.5
+HIGH_BTC_ETH_RATIO = 31.1
 LOW_BTC_ETH_RATIO = 31
 
 NOBITEX_API = "https://apiv2.nobitex.ir/market/stats"
@@ -87,9 +87,6 @@ def check_conditions(btc, eth):
         try:
             with open(state_file, "r", encoding="utf-8") as f:
                 previous_result = json.load(f)
-
-            print("Previous result:")
-            print(previous_result)
 
         except Exception as e:
             print(f"Could not read previous result: {e}")
