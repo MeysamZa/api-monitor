@@ -30,13 +30,7 @@ def get_prices():
         "dstCurrency": "usdt"
     }
 
-    response = requests.get(
-        NOBITEX_API,
-        data=payload,
-        headers=headers
-        params=params,
-        timeout=15
-    )
+    response = requests.request("GET", NOBITEX_API, headers=headers, data=payload,params=params)
 
     response.raise_for_status()
 
@@ -160,11 +154,11 @@ def check_conditions(btc, eth):
 
     condition = False
     
-    if current_ratio>=HIGH_BTC_ETH_RATIO
+    if current_ratio>=HIGH_BTC_ETH_RATIO:
         condition = True
         signal="Chnage BTC to ETH"
         
-    if current_ratio<=LOW_BTC_ETH_RATIO
+    if current_ratio<=LOW_BTC_ETH_RATIO:
         condition = True
         signal="Chnage ETH to BTC"
     
@@ -175,7 +169,7 @@ def check_conditions(btc, eth):
             "🚨 Nobitex Alert\n\n"
             f"BTC/USDT: {btc:,.2f}\n"
             f"ETH/USDT: {eth:,.2f}\n"
-            f"Ratio: {Ratio:,.2f}\n"
+            f"Ratio: {current_ratio:,.2f}\n"
             f"Signal: {signal:,.2f}\n"
         )
 
