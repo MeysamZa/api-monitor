@@ -6,6 +6,9 @@ import requests
 # Configuration
 # ==========================================
 
+HIGH_BTC_ETH_RATIO = 31.5
+LOW_BTC_ETH_RATIO = 31
+
 NOBITEX_API = "https://apiv2.nobitex.ir/market/stats"
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
@@ -74,34 +77,109 @@ def send_telegram(message):
 
 def check_conditions(btc, eth):
 
-    # ======================================
-    # این قسمت را خودت تغییر بده
-    # ======================================
+    import json
+    from pathlib import Path
+
+    state_file = Path("last_result.json")
+
+    # ==========================================
+    # خواندن نتیجه اجرای قبلی
+    # ==========================================
+
+    previous_result = None
+
+    if state_file.exists():
+
+        try:
+            with open(state_file, "r", encoding="utf-8") as f:
+                previous_result = json.load(f)
+
+            print("Previous result:")
+            print(previous_result)
+
+        except Exception as e:
+            print(f"Could not read previous result: {e}")
+
+
+    # ==========================================
+    # محاسبات فعلی
+    # ==========================================
+    
+    current_ratio = btc / eth
+    current_result = {
+        "btc": btc,
+        "eth": eth,
+        "ratio": current_ratio,
+    }
+
+
+    # ==========================================
+    # استفاده از نتیجه قبلی
+    # ==========================================
+
+    if previous_result:
+
+        previous_btc = previous_result.get("btc")
+        previous_eth = previous_result.get("eth")
+        previous_ratio = previous_result.get("ratio")
+
+        print(f"Previous BTC: {previous_btc}")
+        print(f"Previous ETH: {previous_eth}")
+        print(f"Previous Ratio: {previous_ratio}")
+
+        # ======================================
+        # شروط خودت را اینجا بنویس
+        # ======================================
+
+        # مثال:
+        #
+        # if btc > previous_btc:
+        #     ...
+        #
+        # if previous_result.get("signal") == "BUY":
+        #     ...
+
+
+    # ==========================================
+    # ذخیره نتیجه فعلی
+    # ==========================================
+
+    with open(state_file, "w", encoding="utf-8") as f:
+
+        json.dump(
+            current_result,
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
+
+
+    # ==========================================
+    # شرط ارسال Telegram
+    # ==========================================
 
     condition = False
-
-    # مثال:
-    #
-    # condition = btc > 100000
-    #
-    # یا:
-    #
-    # condition = btc > 100000 and eth < 5000
-    #
-    # یا هر محاسبه دیگری که بخواهی
+    
+    if current_ratio>=HIGH_BTC_ETH_RATIO
+        condition = True
+        signal="Chnage BTC to ETH"
+        
+    if current_ratio<=LOW_BTC_ETH_RATIO
+        condition = True
+        signal="Chnage ETH to BTC"
+    
 
     if condition:
 
-        message = (
+        return (
             "🚨 Nobitex Alert\n\n"
             f"BTC/USDT: {btc:,.2f}\n"
-            f"ETH/USDT: {eth:,.2f}"
+            f"ETH/USDT: {eth:,.2f}\n"
+            f"Ratio: {Ratio:,.2f}\n"
+            f"Signal: {signal:,.2f}\n"
         )
 
-        return message
-
     return None
-
 
 # ==========================================
 # Main
