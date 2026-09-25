@@ -1,4 +1,5 @@
 name: Nobitex Monitor
+run-name: Nobitex Monitor - ${{ github.event_name }}
 
 on:
 
