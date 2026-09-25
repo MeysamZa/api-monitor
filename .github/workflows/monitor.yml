@@ -1,22 +1,22 @@
 name: Nobitex Monitor
+
 run-name: Nobitex Monitor - ${{ github.event_name }}
 
 on:
-
   schedule:
     - cron: "*/5 * * * *"
 
   workflow_dispatch:
 
+  repository_dispatch:
+    types:
+      - telegram_command
 
 permissions:
   contents: write
 
-
 jobs:
-
   monitor:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -26,29 +26,28 @@ jobs:
         with:
           fetch-depth: 0
 
-
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-
 
       - name: Run monitor
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+          COMMAND: ${{ github.event.client_payload.command }}
+          COMMAND_CHAT_ID: ${{ github.event.client_payload.chat_id }}
+
         run: |
           python monitor.py
 
-
       - name: Save result
         run: |
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 

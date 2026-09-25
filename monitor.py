@@ -1,5 +1,7 @@
 import os
 import requests
+from datetime import datetime
+
 
 
 # ==========================================
@@ -13,6 +15,9 @@ NOBITEX_API = "https://apiv2.nobitex.ir/market/stats"
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+
+COMMAND = os.environ.get("COMMAND", "")
+COMMAND_CHAT_ID = os.environ.get("COMMAND_CHAT_ID")
 
 
 # ==========================================
@@ -49,14 +54,17 @@ def get_prices():
 # Send Telegram message
 # ==========================================
 
-def send_telegram(message):
+def send_telegram(message, chat_id=None):
+
+    if chat_id is None:
+        chat_id = TELEGRAM_CHAT_ID
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
     response = requests.post(
         url,
         data={
-            "chat_id": TELEGRAM_CHAT_ID,
+            "chat_id": chat_id,
             "text": message
         },
         timeout=15
@@ -64,6 +72,42 @@ def send_telegram(message):
 
     response.raise_for_status()
 
+
+def handle_command(command, chat_id, btc, eth):
+
+    command = command.strip().lower()
+
+    if command == "/price":
+
+        message = (
+            "📊 Nobitex\n\n"
+            f"₿ BTC/USDT: {btc:,.2f}\n"
+            f"Ξ ETH/USDT: {eth:,.2f}\n"
+            f"Ratio: {btc/eth:,.2f}\n\n"
+            f"🕐 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+
+        send_telegram(message, chat_id)
+        return
+
+    if command == "/help":
+
+        message = (
+            "🤖 دستورات ربات\n\n"
+            "/price - قیمت BTC و ETH\n"
+            "/status - وضعیت آخرین محاسبه\n"
+            "/signal - بررسی سیگنال\n"
+            "/help - راهنمای دستورات"
+        )
+
+        send_telegram(message, chat_id)
+        return
+
+    send_telegram(
+        f"❓ دستور ناشناخته:\n{command}\n\n"
+        "برای مشاهده دستورات /help را بفرستید.",
+        chat_id
+    )
 
 # ==========================================
 # Your conditions
@@ -178,6 +222,24 @@ def check_conditions(btc, eth):
 def main():
 
     btc, eth = get_prices()
+    print(f"BTC/USDT = {btc:,.2f}")
+    print(f"ETH/USDT = {eth:,.2f}")
+
+    # اگر Workflow از Telegram فراخوانی شده
+    if COMMAND:
+
+        print(f"Telegram command: {COMMAND}")
+
+        handle_command(
+            COMMAND,
+            COMMAND_CHAT_ID,
+            btc,
+            eth
+        )
+
+        return
+
+    # در غیر این صورت، اجرای عادی مانیتور
 
     message = check_conditions(btc, eth)
 
