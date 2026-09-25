@@ -8,7 +8,7 @@ from datetime import datetime
 # Configuration
 # ==========================================
 
-HIGH_BTC_ETH_RATIO = 31.5
+HIGH_BTC_ETH_RATIO = 31.44
 LOW_BTC_ETH_RATIO = 31
 
 NOBITEX_API = "https://apiv2.nobitex.ir/market/stats"
