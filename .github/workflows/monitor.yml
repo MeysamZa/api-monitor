@@ -11,6 +11,7 @@ on:
   repository_dispatch:
     types:
       - telegram_command
+      - cloudflare_schedule
 
 permissions:
   contents: write
