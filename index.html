@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="https://www.google.com/s2/favicons?domain=bitcoin.org&sz=64" type="image/png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title>BTC & ETH Price Monitor</title>
 
     <style>
@@ -174,6 +175,87 @@
                 font-size: 22px;
             }
         }
+        
+        /* Crypto chart section */
+        .chart-section {
+            margin-top: 35px;
+            padding: 22px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 18px;
+        }
+
+        .chart-section h2 {
+            text-align: center;
+            font-size: 22px;
+            margin: 0 0 22px;
+        }
+
+        .chart-tabs,
+        .period-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .chart-tabs button,
+        .period-tabs button {
+            min-width: 0;
+            padding: 10px 16px;
+            font-size: 13px;
+            background: #334155;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+        }
+
+        .chart-tabs button.active,
+        .period-tabs button.active {
+            background: #2563eb;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .chart-info {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: #94a3b8;
+            font-size: 13px;
+            margin: 15px 0;
+            direction: ltr;
+        }
+
+        .chart-canvas-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+        }
+
+        .chart-status {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 14px;
+            min-height: 20px;
+        }
+
+        @media (max-width: 520px) {
+            .chart-section {
+                padding: 14px;
+            }
+
+            .chart-canvas-container {
+                height: 300px;
+            }
+
+            .chart-tabs button,
+            .period-tabs button {
+                padding: 9px 11px;
+            }
+        }        
     </style>
 </head>
 
@@ -215,6 +297,68 @@
     <div class="status" id="status">
         آماده دریافت اطلاعات
     </div>
+
+    
+    <section class="chart-section">
+
+        <h2>Crypto Price Charts</h2>
+
+        <div class="chart-tabs">
+            <button class="active"
+                    data-chart="BTCUSDT"
+                    onclick="selectChart('BTCUSDT', this)">
+                BTC / USDT
+            </button>
+
+            <button data-chart="ETHUSDT"
+                    onclick="selectChart('ETHUSDT', this)">
+                ETH / USDT
+            </button>
+
+            <button data-chart="RATIO"
+                    onclick="selectChart('RATIO', this)">
+                BTC / ETH Ratio
+            </button>
+        </div>
+
+        <div class="period-tabs">
+            <button class="active" data-period="1D"
+                    onclick="selectPeriod('1D', this)">1D</button>
+
+            <button data-period="5D"
+                    onclick="selectPeriod('5D', this)">5D</button>
+
+            <button data-period="1M"
+                    onclick="selectPeriod('1M', this)">1M</button>
+
+            <button data-period="6M"
+                    onclick="selectPeriod('6M', this)">6M</button>
+
+            <button data-period="1Y"
+                    onclick="selectPeriod('1Y', this)">1Y</button>
+
+            <button data-period="5Y"
+                    onclick="selectPeriod('5Y', this)">5Y</button>
+        </div>
+
+        <div class="chart-info">
+            <span id="chartSymbol">BTCUSDT</span>
+            <span id="chartResolution">5-minute candles</span>
+        </div>
+
+        <div class="chart-canvas-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <div class="chart-status" id="chartStatus">
+            آماده دریافت اطلاعات نمودار
+        </div>
+
+        <div style="text-align:center; margin-top:18px">
+            <button onclick="loadChart()">↻ Refresh Chart</button>
+        </div>
+
+    </section>
 
     <div class="footer">
         Data source: Nobitex API
@@ -316,6 +460,380 @@
 
     // دریافت قیمت هنگام باز شدن صفحه
     getPrices();
+</script>
+<script>
+    
+const HISTORY_API =
+    "https://apiv2.nobitex.ir/market/udf/history";
+
+let selectedChart = "BTCUSDT";
+let selectedPeriod = "1D";
+let activeChart = null;
+let chartRequestId = 0;
+
+const periodConfig = {
+    "1D": {
+        resolution: "5",
+        count: 288,
+        label: "5-minute candles"
+    },
+    "5D": {
+        resolution: "30",
+        count: 240,
+        label: "30-minute candles"
+    },
+    "1M": {
+        resolution: "D",
+        count: 31,
+        label: "Daily candles"
+    },
+    "6M": {
+        resolution: "D",
+        count: 184,
+        label: "Daily candles"
+    },
+    "1Y": {
+        resolution: "D",
+        count: 366,
+        label: "Daily candles"
+    },
+    "5Y": {
+        resolution: "W",
+        count: 260,
+        label: "Weekly candles"
+    }
+};
+
+function selectChart(symbol, button) {
+    selectedChart = symbol;
+
+    document.querySelectorAll(".chart-tabs button")
+        .forEach(b => b.classList.remove("active"));
+
+    button.classList.add("active");
+    loadChart();
+}
+
+function selectPeriod(period, button) {
+    selectedPeriod = period;
+
+    document.querySelectorAll(".period-tabs button")
+        .forEach(b => b.classList.remove("active"));
+
+    button.classList.add("active");
+    loadChart();
+}
+
+async function fetchHistory(symbol, resolution, from, to, countback) {
+    const url = new URL(HISTORY_API);
+
+    url.searchParams.set("symbol", symbol);
+    url.searchParams.set("resolution", resolution);
+    url.searchParams.set("to", String(to));
+
+    if (from !== undefined && from !== null) {
+        url.searchParams.set("from", String(from));
+    }
+
+    if (countback) {
+        url.searchParams.set("countback", String(countback));
+    }
+
+    const response = await fetch(url, {
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+    });
+
+    if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (data.s === "no_data") {
+        return [];
+    }
+
+    if (data.s !== "ok") {
+        throw new Error(data.errmsg || "Invalid API response");
+    }
+
+    return data.t.map((time, i) => ({
+        time: Number(time),
+        open: Number(data.o[i]),
+        high: Number(data.h[i]),
+        low: Number(data.l[i]),
+        close: Number(data.c[i])
+    })).filter(c =>
+        Number.isFinite(c.close) &&
+        Number.isFinite(c.time)
+    );
+}
+
+// Fetch daily candles in chunks, then aggregate them into weeks.
+// The API documents daily candles but not a weekly resolution.
+async function fetchFiveYears(symbol, now) {
+    const start = now - 5 * 365.25 * 86400;
+    const chunkDays = 400;
+    const all = [];
+
+    for (let from = start; from < now; from += chunkDays * 86400) {
+        const to = Math.min(from + chunkDays * 86400, now);
+
+        const candles = await fetchHistory(
+            symbol, "D", Math.floor(from), Math.floor(to)
+        );
+
+        all.push(...candles);
+    }
+
+    const unique = new Map();
+
+    all.forEach(c => unique.set(c.time, c));
+
+    const sorted = [...unique.values()]
+        .sort((a, b) => a.time - b.time);
+
+    const weeks = new Map();
+
+    sorted.forEach(c => {
+        const date = new Date(c.time * 1000);
+
+        // UTC Monday at 00:00, the start of the candle's week.
+        const day = date.getUTCDay();
+        date.setUTCDate(date.getUTCDate() - ((day + 6) % 7));
+        date.setUTCHours(0, 0, 0, 0);
+
+        const key = Math.floor(date.getTime() / 1000);
+
+        if (!weeks.has(key)) {
+            weeks.set(key, {
+                time: key,
+                open: c.open,
+                high: c.high,
+                low: c.low,
+                close: c.close
+            });
+        } else {
+            const w = weeks.get(key);
+            w.high = Math.max(w.high, c.high);
+            w.low = Math.min(w.low, c.low);
+            w.close = c.close;
+        }
+    });
+
+    return [...weeks.values()].sort((a, b) => a.time - b.time);
+}
+
+async function getSeries(symbol, period, now) {
+    const config = periodConfig[period];
+
+    if (period === "5Y") {
+        return fetchFiveYears(symbol, now);
+    }
+
+    return fetchHistory(
+        symbol,
+        config.resolution,
+        undefined,
+        now,
+        config.count
+    );
+}
+
+function formatDate(timestamp, period) {
+    const date = new Date(timestamp * 1000);
+
+    if (period === "1D" || period === "5D") {
+        return date.toLocaleString("fa-IR", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    return date.toLocaleDateString("fa-IR", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit"
+    });
+}
+
+function buildChartData(btc, eth) {
+    if (selectedChart === "BTCUSDT") {
+        return {
+            title: "BTCUSDT",
+            points: btc.map(c => ({
+                time: c.time,
+                value: c.close
+            }))
+        };
+    }
+
+    if (selectedChart === "ETHUSDT") {
+        return {
+            title: "ETHUSDT",
+            points: eth.map(c => ({
+                time: c.time,
+                value: c.close
+            }))
+        };
+    }
+
+    // Calculate ratio only where both markets have the same
+    // candle timestamp.
+    const ethByTime = new Map(eth.map(c => [c.time, c.close]));
+
+    const points = btc
+        .filter(c => ethByTime.has(c.time))
+        .map(c => ({
+            time: c.time,
+            value: c.close / ethByTime.get(c.time)
+        }));
+
+    return {
+        title: "BTC / ETH Ratio",
+        points
+    };
+}
+
+async function loadChart() {
+    const requestId = ++chartRequestId;
+    const status = document.getElementById("chartStatus");
+    const now = Math.floor(Date.now() / 1000);
+
+    status.className = "chart-status";
+    status.textContent = "در حال دریافت داده‌های نمودار...";
+
+    document.getElementById("chartSymbol").textContent =
+        selectedChart;
+
+    document.getElementById("chartResolution").textContent =
+        periodConfig[selectedPeriod].label;
+
+    try {
+        const [btc, eth] = await Promise.all([
+            getSeries("BTCUSDT", selectedPeriod, now),
+            getSeries("ETHUSDT", selectedPeriod, now)
+        ]);
+
+        // Ignore an older request if the user changed the chart.
+        if (requestId !== chartRequestId) return;
+
+        const result = buildChartData(btc, eth);
+
+        if (!result.points.length) {
+            throw new Error("No matching candles were returned.");
+        }
+
+        const labels = result.points.map(p =>
+            formatDate(p.time, selectedPeriod)
+        );
+
+        const values = result.points.map(p => p.value);
+
+        const canvas = document.getElementById("priceChart");
+
+        if (activeChart) {
+            activeChart.destroy();
+        }
+
+        activeChart = new Chart(canvas, {
+            type: "line",
+
+            data: {
+                labels,
+                datasets: [{
+                    label: result.title,
+                    data: values,
+                    borderColor: "#38bdf8",
+                    backgroundColor: "rgba(56,189,248,0.12)",
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHitRadius: 8,
+                    fill: true,
+                    tension: 0.15
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+
+                interaction: {
+                    intersect: false,
+                    mode: "index"
+                },
+
+                plugins: {
+                    legend: {
+                        labels: { color: "#e2e8f0" }
+                    },
+
+                    tooltip: {
+                        callbacks: {
+                            label: context =>
+                                context.dataset.label + ": " +
+                                Number(context.raw).toLocaleString(
+                                    "en-US",
+                                    { maximumFractionDigits: 8 }
+                                )
+                        }
+                    }
+                },
+
+                scales: {
+                    x: {
+                        ticks: {
+                            color: "#94a3b8",
+                            maxTicksLimit: 8,
+                            maxRotation: 0
+                        },
+                        grid: {
+                            color: "rgba(148,163,184,0.1)"
+                        }
+                    },
+
+                    y: {
+                        ticks: {
+                            color: "#94a3b8",
+                            callback: value =>
+                                Number(value).toLocaleString("en-US")
+                        },
+                        grid: {
+                            color: "rgba(148,163,184,0.1)"
+                        }
+                    }
+                }
+            }
+        });
+
+        status.className = "chart-status";
+        status.textContent =
+            "دریافت موفق؛ تعداد نقاط نمودار: " +
+            result.points.length;
+
+    } catch (error) {
+        if (requestId !== chartRequestId) return;
+
+        console.error("Chart error:", error);
+
+        status.className = "chart-status";
+        status.textContent =
+            "خطا در دریافت نمودار: " + error.message +
+            " — در صورت لزوم CORS را بررسی کن.";
+    }
+}
+
+// Load the default chart when the page opens.
+if (typeof Chart !== "undefined") {
+    loadChart();
+} else {
+    document.getElementById("chartStatus").textContent =
+        "کتابخانه نمودار بارگذاری نشد؛ اتصال اینترنت را بررسی کن.";
+}
 </script>
 
 </body>
