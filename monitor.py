@@ -8,8 +8,8 @@ from datetime import datetime
 # Configuration
 # ==========================================
 
-HIGH_BTC_ETH_RATIO = 31.44
-LOW_BTC_ETH_RATIO = 31
+HIGH_BTC_ETH_RATIO = 31.45
+LOW_BTC_ETH_RATIO = 31.05
 
 NOBITEX_API = "https://apiv2.nobitex.ir/market/stats"
 
@@ -178,14 +178,14 @@ def check_conditions(btc, eth):
     # ذخیره نتیجه فعلی
     # ==========================================
 
-    with open(state_file, "w", encoding="utf-8") as f:
+    # with open(state_file, "w", encoding="utf-8") as f:
 
-        json.dump(
-            current_result,
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
+    #     json.dump(
+    #         current_result,
+    #         f,
+    #         ensure_ascii=False,
+    #         indent=2
+    #     )
 
 
     # ==========================================
