@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC & ETH Price Monitor</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Tahoma, Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 27px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            direction: ltr;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 18px;
+            padding: 25px 20px;
+            text-align: center;
+        }
+
+        .coin {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .btc {
+            color: #fbbf24;
+        }
+
+        .eth {
+            color: #a5b4fc;
+        }
+
+        .price {
+            font-size: clamp(22px, 4vw, 32px);
+            font-weight: bold;
+            direction: ltr;
+            overflow-wrap: anywhere;
+            margin-bottom: 10px;
+        }
+
+        .currency {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .ratio-card {
+            margin-top: 18px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 18px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .ratio-title {
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+
+        .ratio {
+            color: #34d399;
+            font-size: 32px;
+            font-weight: bold;
+            direction: ltr;
+        }
+
+        .ratio-description {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 10px;
+            direction: ltr;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 13px 32px;
+            font-size: 16px;
+            font-family: inherit;
+            font-weight: bold;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            min-width: 160px;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 13px;
+            color: #94a3b8;
+            min-height: 20px;
+        }
+
+        .error {
+            color: #f87171;
+        }
+
+        .success {
+            color: #34d399;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        @media (max-width: 520px) {
+            body {
+                padding: 15px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>مانیتور قیمت ارزهای دیجیتال</h1>
+    <div class="subtitle">Nobitex BTC / ETH Price Monitor</div>
+
+    <div class="cards">
+
+        <div class="card">
+            <div class="coin btc">₿ Bitcoin (BTC)</div>
+            <div class="price" id="btcPrice">---</div>
+            <div class="currency">USDT</div>
+        </div>
+
+        <div class="card">
+            <div class="coin eth">◆ Ethereum (ETH)</div>
+            <div class="price" id="ethPrice">---</div>
+            <div class="currency">USDT</div>
+        </div>
+
+    </div>
+
+    <div class="ratio-card">
+        <div class="ratio-title">نسبت قیمت بیت‌کوین به اتریوم</div>
+        <div class="ratio" id="ratio">---</div>
+        <div class="ratio-description">BTC Price ÷ ETH Price</div>
+    </div>
+
+    <div class="actions">
+        <button id="refreshBtn" onclick="getPrices()">
+            ↻ Refresh
+        </button>
+    </div>
+
+    <div class="status" id="status">
+        آماده دریافت اطلاعات
+    </div>
+
+    <div class="footer">
+        Data source: Nobitex API
+        <br>
+        <span id="lastUpdate">آخرین به‌روزرسانی: ---</span>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = "https://apiv2.nobitex.ir/market/stats";
+
+    const numberFormat = new Intl.NumberFormat("en-US", {
+        maximumFractionDigits: 8
+    });
+
+    async function getPrices() {
+        const button = document.getElementById("refreshBtn");
+        const status = document.getElementById("status");
+
+        button.disabled = true;
+        button.textContent = "در حال دریافت...";
+        status.className = "status";
+        status.textContent = "در حال دریافت قیمت‌ها از نوبیتکس...";
+
+        try {
+            const url = new URL(API_URL);
+
+            url.searchParams.set("srcCurrency", "btc,eth");
+            url.searchParams.set("dstCurrency", "usdt");
+
+            const response = await fetch(url.toString(), {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+                throw new Error("HTTP Error: " + response.status);
+            }
+
+            const data = await response.json();
+
+            if (data.status !== "ok") {
+                throw new Error("Nobitex API returned an error");
+            }
+
+            const btcPrice = Number(data.stats["btc-usdt"].latest);
+            const ethPrice = Number(data.stats["eth-usdt"].latest);
+
+            if (
+                !Number.isFinite(btcPrice) ||
+                !Number.isFinite(ethPrice) ||
+                btcPrice <= 0 ||
+                ethPrice <= 0
+            ) {
+                throw new Error("Invalid price data received");
+            }
+
+            const ratio = btcPrice / ethPrice;
+
+            document.getElementById("btcPrice").textContent =
+                numberFormat.format(btcPrice);
+
+            document.getElementById("ethPrice").textContent =
+                numberFormat.format(ethPrice);
+
+            document.getElementById("ratio").textContent =
+                numberFormat.format(ratio);
+
+            document.getElementById("lastUpdate").textContent =
+                "آخرین به‌روزرسانی: " +
+                new Date().toLocaleString("fa-IR");
+
+            status.className = "status success";
+            status.textContent = "اطلاعات با موفقیت دریافت شد.";
+
+        } catch (error) {
+            console.error(error);
+
+            status.className = "status error";
+
+            if (error instanceof TypeError) {
+                status.textContent =
+                    "خطا در اتصال یا دسترسی مرورگر به API. " +
+                    "ممکن است محدودیت CORS وجود داشته باشد.";
+            } else {
+                status.textContent =
+                    "خطا در دریافت اطلاعات: " + error.message;
+            }
+
+        } finally {
+            button.disabled = false;
+            button.textContent = "↻ Refresh";
+        }
+    }
+
+    // دریافت قیمت هنگام باز شدن صفحه
+    getPrices();
+</script>
+
+</body>
+</html>
