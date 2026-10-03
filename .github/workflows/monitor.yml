@@ -3,8 +3,8 @@ name: Nobitex Monitor
 run-name: Nobitex Monitor - ${{ github.event_name }}
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  #schedule:
+  #  - cron: "*/5 * * * *"
 
   workflow_dispatch:
 
