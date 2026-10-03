@@ -345,6 +345,10 @@
             <span id="chartSymbol">BTCUSDT</span>
             <span id="chartResolution">5-minute candles</span>
         </div>
+        <div class="chart-info">
+            <span>بازدهی بازه:</span>
+            <strong id="chartReturn" dir="ltr">---</strong>
+        </div>
 
         <div class="chart-canvas-container">
             <canvas id="priceChart"></canvas>
@@ -732,6 +736,26 @@ async function loadChart() {
         );
 
         const values = result.points.map(p => p.value);
+
+        const firstValue = values[0];
+        const lastValue = values[values.length - 1];
+        
+        const returnPercent = firstValue !== 0
+            ? ((lastValue - firstValue) / firstValue) * 100
+            : 0;
+        
+        const returnText =
+            (returnPercent > 0 ? "+" : "") +
+            returnPercent.toFixed(2) + "%";
+
+        const returnElement = document.getElementById("chartReturn");
+
+        returnElement.textContent = returnText;
+        
+        returnElement.style.color =
+            returnPercent > 0 ? "#34d399" :
+            returnPercent < 0 ? "#f87171" :
+            "#e2e8f0";
 
         const canvas = document.getElementById("priceChart");
 
