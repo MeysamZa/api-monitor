@@ -319,6 +319,10 @@
                     onclick="selectChart('RATIO', this)">
                 BTC / ETH Ratio
             </button>
+            <button data-chart="USDTIRT"
+                    onclick="selectChart('USDTIRT', this)">
+                USDT / IRT
+            </button>
         </div>
 
         <div class="period-tabs">
@@ -664,7 +668,8 @@ function formatDate(timestamp, period) {
     });
 }
 
-function buildChartData(btc, eth) {
+function buildChartData(btc, eth, usdtIrt) {
+
     if (selectedChart === "BTCUSDT") {
         return {
             title: "BTCUSDT",
@@ -685,9 +690,20 @@ function buildChartData(btc, eth) {
         };
     }
 
-    // Calculate ratio only where both markets have the same
-    // candle timestamp.
-    const ethByTime = new Map(eth.map(c => [c.time, c.close]));
+    if (selectedChart === "USDTIRT") {
+        return {
+            title: "USDT / IRT",
+            points: usdtIrt.map(c => ({
+                time: c.time,
+                value: c.close
+            }))
+        };
+    }
+
+    // BTC / ETH Ratio
+    const ethByTime = new Map(
+        eth.map(c => [c.time, c.close])
+    );
 
     const points = btc
         .filter(c => ethByTime.has(c.time))
@@ -717,15 +733,17 @@ async function loadChart() {
         periodConfig[selectedPeriod].label;
 
     try {
-        const [btc, eth] = await Promise.all([
-            getSeries("BTCUSDT", selectedPeriod, now),
-            getSeries("ETHUSDT", selectedPeriod, now)
+            const [btc, eth, usdtIrt] = await Promise.all([
+                getSeries("BTCUSDT", selectedPeriod, now),
+                getSeries("ETHUSDT", selectedPeriod, now),
+                getSeries("USDTIRT", selectedPeriod, now)
+            ]);
         ]);
 
         // Ignore an older request if the user changed the chart.
         if (requestId !== chartRequestId) return;
 
-        const result = buildChartData(btc, eth);
+        const result = buildChartData(btc, eth, usdtIrt);
 
         if (!result.points.length) {
             throw new Error("No matching candles were returned.");
