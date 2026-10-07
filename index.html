@@ -738,7 +738,6 @@ async function loadChart() {
                 getSeries("ETHUSDT", selectedPeriod, now),
                 getSeries("USDTIRT", selectedPeriod, now)
             ]);
-        ]);
 
         // Ignore an older request if the user changed the chart.
         if (requestId !== chartRequestId) return;
