@@ -533,6 +533,7 @@ function selectPeriod(period, button) {
 }
 
 async function fetchHistory(symbol, resolution, from, to, countback) {
+    try{
     const url = new URL(HISTORY_API);
 
     url.searchParams.set("symbol", symbol);
@@ -576,6 +577,12 @@ async function fetchHistory(symbol, resolution, from, to, countback) {
         Number.isFinite(c.close) &&
         Number.isFinite(c.time)
     );
+}
+catch(error)
+{
+    console.error(`Fetch history failed for ${symbol}:`, error);
+    return [];
+}
 }
 
 // Fetch daily candles in chunks, then aggregate them into weeks.
